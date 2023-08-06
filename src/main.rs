@@ -3,10 +3,12 @@
 mod structs;
 mod ui;
 
+use std::sync::{Arc, Mutex};
+
 use structs::AppState;
-use ui::run_ui;
 
 fn main() -> Result<(), eframe::Error> {
-    let app_state = AppState::default();
-    run_ui(app_state)
+    let app_state = Arc::new(Mutex::new(AppState::default()));
+    let ui = ui::UI::new(app_state);
+    ui.run()
 }

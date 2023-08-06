@@ -1,27 +1,47 @@
-use eframe::egui;
-
 use crate::structs::AppState;
+use eframe::egui;
+use egui::Context;
+use std::sync::{Arc, Mutex};
 
-pub fn run_ui(mut app_state: AppState) -> Result<(), eframe::Error> {
-    let options = eframe::NativeOptions {
-        initial_window_size: Some(egui::vec2(1280., 920.)),
-        ..Default::default()
-    };
+pub struct UI {
+    pub app_state: Arc<Mutex<AppState>>,
+}
 
-    eframe::run_simple_native("Rust Socket Sandbox", options, move |ctx, _frame| {
-        egui::CentralPanel::default().show(ctx, |_ui| {
-            egui::Window::new("Connection Manager").show(ctx, |ui| {
-                ui.horizontal(|ui| {
-                    ui.label("Ip Address:");
-                    ui.text_edit_singleline(&mut app_state.editing_ip);
-                    if ui.button("Create Connection").clicked() {
-                        app_state.insert_new_window(app_state.editing_ip.clone());
-                    }
+impl UI {
+    pub fn new(app_state: Arc<Mutex<AppState>>) -> Self {
+        Self { app_state }
+    }
+
+    pub fn run(&self) -> Result<(), eframe::Error> {
+        let options = eframe::NativeOptions {
+            initial_window_size: Some(egui::vec2(1280., 920.)),
+            ..Default::default()
+        };
+
+        let app_state = Arc::clone(&self.app_state);
+
+        eframe::run_simple_native("Rust Socket Sandbox", options, move |ctx, _frame| {
+            egui::CentralPanel::default().show(ctx, |_ui| {
+                egui::Window::new("Connection Manager").show(ctx, |ui| {
+                    ui.horizontal(|ui| {
+                        let mut state = app_state.lock().unwrap();
+                        ui.label("Ip Address:");
+                        ui.text_edit_singleline(&mut state.editing_ip);
+                        if ui.button("Create Connection").clicked() {
+                            let editing_ip = state.editing_ip.clone();
+                            state.insert_new_window(editing_ip);
+                        }
+                    });
                 });
             });
-        });
 
-        for connection_window in &mut app_state.connection_window {
+            Self::render_windows(ctx, &app_state);
+        })
+    }
+
+    fn render_windows(ctx: &Context, app_state: &Arc<Mutex<AppState>>) {
+        let mut state = app_state.lock().unwrap();
+        for connection_window in &mut state.connection_window {
             egui::Window::new(&connection_window.id).show(ctx, |ui| {
                 ui.horizontal(|ui| {
                     ui.label("Ip Address:");
@@ -52,5 +72,5 @@ pub fn run_ui(mut app_state: AppState) -> Result<(), eframe::Error> {
                 });
             });
         }
-    })
+    }
 }
