@@ -48,6 +48,7 @@ impl UI {
                                 let _ = utnw_clone
                                     .send(Message::NewClient {
                                         id: (id.to_string()),
+                                        ip: editing_ip.to_string(),
                                     })
                                     .await;
                             });

@@ -65,7 +65,7 @@ impl AppState {
 
 #[derive(Debug)]
 pub enum Message {
-    NewClient {id: String},
+    NewClient {id: String, ip: String},
     Message {id: String, payload: String},
     Close {id: String },
 }
