@@ -36,6 +36,7 @@ impl UI {
             });
 
             Self::render_windows(ctx, &app_state);
+            ctx.request_repaint();
         })
     }
 
