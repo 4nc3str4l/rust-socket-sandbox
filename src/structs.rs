@@ -64,14 +64,8 @@ impl AppState {
 }
 
 #[derive(Debug)]
-pub enum Operation {
-    NewClient,
-    Message,
-}
-
-#[derive(Debug)]
-pub struct Message {
-    pub id: String,
-    pub operation: Operation,
-    pub payload: String,
+pub enum Message {
+    NewClient {id: String},
+    Message {id: String, payload: String},
+    Close {id: String },
 }

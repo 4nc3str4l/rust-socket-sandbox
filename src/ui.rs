@@ -1,32 +1,37 @@
-use crate::structs::{AppState, Message, Operation};
+use crate::structs::{AppState, Message};
 use eframe::egui;
 use egui::Context;
-use tokio::sync::mpsc::{Sender, Receiver};
 use std::sync::{Arc, Mutex};
+use tokio::sync::mpsc::{Receiver, Sender};
 
 pub struct UI {
     pub app_state: Arc<Mutex<AppState>>,
     pub ui_to_network: Sender<Message>,
-    pub network_to_ui: Receiver<Message>
+    pub network_to_ui: Arc<Mutex<Receiver<Message>>>,
 }
 
 impl UI {
-    pub fn new(app_state: Arc<Mutex<AppState>>, uitn: Sender<Message>, ntui: Receiver<Message>) -> Self {
-        Self { 
+    pub fn new(
+        app_state: Arc<Mutex<AppState>>,
+        uitn: Sender<Message>,
+        ntui: Receiver<Message>,
+    ) -> Self {
+        Self {
             app_state,
             ui_to_network: uitn,
-            network_to_ui: ntui
+            network_to_ui: Arc::new(Mutex::new(ntui)),
         }
     }
 
-    pub fn run(&self) -> Result<(), eframe::Error> {
+    pub async fn run(&self) -> Result<(), eframe::Error> {
         let options = eframe::NativeOptions {
-            initial_window_size: Some(egui::vec2(1280., 920.)),
+            initial_window_size: Some(egui::vec2(1280., 720.)),
             ..Default::default()
         };
 
         let app_state = Arc::clone(&self.app_state);
-        let utnw = self.ui_to_network.clone(); 
+        let utnw = self.ui_to_network.clone();
+        let ntui = Arc::clone(&self.network_to_ui);
 
         eframe::run_simple_native("Rust Socket Sandbox", options, move |ctx, _frame| {
             egui::CentralPanel::default().show(ctx, |_ui| {
@@ -40,14 +45,24 @@ impl UI {
                             let id = state.insert_new_window(editing_ip.to_owned());
                             let utnw_clone = utnw.clone();
                             tokio::spawn(async move {
-                                let _ = utnw_clone.send(Message { id: id.to_string(), operation: Operation::NewClient, payload: editing_ip.to_owned() }).await;
+                                let _ = utnw_clone
+                                    .send(Message::NewClient {
+                                        id: (id.to_string()),
+                                    })
+                                    .await;
                             });
                         }
                     });
                 });
             });
 
+            let mut ntui_lock = ntui.lock().unwrap();
+            while let Ok(message) = ntui_lock.try_recv() {
+                println!("Processing a message = {:?}", message);
+            }
+
             Self::render_windows(ctx, &app_state);
+
             ctx.request_repaint();
         })
     }

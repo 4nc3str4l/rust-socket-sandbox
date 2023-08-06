@@ -6,7 +6,7 @@ mod networking;
 
 use std::sync::{Arc, Mutex};
 
-use networking::client_spawner;
+use networking::network_processor;
 use structs::{AppState, Message};
 use tokio::sync::mpsc;
 
@@ -16,10 +16,10 @@ async fn main() -> Result<(), eframe::Error> {
     let (mut n2uitx, mut ntuirx)  = mpsc::channel::<Message>(200);
 
     tokio::spawn(async move  {
-        client_spawner(&mut ui2nrx, &mut n2uitx).await;
+        network_processor(&mut ui2nrx, &mut n2uitx).await;
     });
-    
+
     let app_state = Arc::new(Mutex::new(AppState::default()));
     let ui = ui::UI::new(app_state, ui2ntx, ntuirx);
-    ui.run()
+    ui.run().await
 }
