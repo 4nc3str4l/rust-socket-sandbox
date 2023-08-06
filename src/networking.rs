@@ -3,6 +3,7 @@ use std::time::Duration;
 use tokio::sync::mpsc::{Receiver, Sender};
 
 use crate::structs::Message;
+use anyhow::Result;
 
 
 
@@ -13,7 +14,11 @@ pub async fn network_processor(ui_to_network: &mut Receiver<Message>, network_to
         println!("Network = {:?}", message);
         match message {
             Message::NewClient { id, ip } => {
-                handle_new_client(net_to_ui.clone(), id.to_owned(), ip.to_owned());
+                let res = handle_new_client(net_to_ui.clone(), id.to_owned(), ip.to_owned());
+                match res {
+                    Ok(_) => println!("Socket Open"),
+                    Err(err) => println!("{:?}", err),
+                }
             },
             Message::Message { id, payload } => {
                 // Here I need somehow to have websocket handles to choose one and give him the data 
@@ -27,10 +32,12 @@ pub async fn network_processor(ui_to_network: &mut Receiver<Message>, network_to
 }
 
 
-pub fn handle_new_client(network_to_ui: Sender<Message>, id: String, ip: String) {
+pub fn handle_new_client(network_to_ui: Sender<Message>, id: String, ip: String) -> Result<()> {
     let net_to_ui = network_to_ui;
+    let url = url::Url::parse(&ip)?;
     tokio::spawn(async move {
         let _ = net_to_ui.send(Message::Message { id,  payload: "Hi".to_string() }).await;
         tokio::time::sleep(Duration::from_secs(5)).await;
     });
+    Ok(())
 }
