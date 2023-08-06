@@ -4,8 +4,8 @@ pub struct Connection {
     pub url: String,
     pub messages: Vec<String>,
     pub editing_message: String,
-    pub send_bytes: u64,
-    pub received_bytes: u64,
+    pub send_bytes: usize,
+    pub received_bytes: usize,
 }
 
 impl Connection {
@@ -66,6 +66,6 @@ impl AppState {
 #[derive(Debug)]
 pub enum Message {
     NewClient { id: String, ip: String },
-    Message { id: String, payload: String },
+    Message { id: String, payload: String, num_bytes: usize },
     Close { id: String },
 }

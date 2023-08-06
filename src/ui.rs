@@ -6,8 +6,8 @@ use tokio::sync::mpsc::{Receiver, Sender};
 
 pub struct UI {
     pub app_state: Arc<Mutex<AppState>>,
-    pub ui_to_network: Sender<Message>,
     pub network_to_ui: Arc<Mutex<Receiver<Message>>>,
+    pub ui_to_network: Sender<Message>,
 }
 
 impl UI {
@@ -59,7 +59,25 @@ impl UI {
 
             let mut ntui_lock = ntui.lock().unwrap();
             while let Ok(message) = ntui_lock.try_recv() {
-                println!("Processing a message = {:?}", message);
+                match message {
+                    Message::NewClient { id, ip } => todo!(),
+                    Message::Message {
+                        id,
+                        payload,
+                        num_bytes,
+                    } => {
+                        let mut state = app_state.lock().unwrap();
+                        for window in state.connection_window.iter_mut() {
+                            if window.id == id {
+                                window.connection.messages.push(payload.to_owned());
+                                window.connection.received_bytes += num_bytes;
+                                break;
+                            }
+                        }
+                        println!("Processing a message = {:?}", &payload);
+                    }
+                    Message::Close { id } => todo!(),
+                }
             }
 
             Self::render_windows(ctx, &app_state);
@@ -78,6 +96,14 @@ impl UI {
                     if ui.button("Connect").clicked() {
                         connection_window.connection.is_connected = true;
                     }
+                });
+                ui.separator();
+                ui.horizontal(|ui| {
+                    ui.label(format!(
+                        "Sent / Recv [{} / {}] bytes",
+                        connection_window.connection.send_bytes,
+                        connection_window.connection.received_bytes
+                    ));
                 });
                 ui.separator();
                 ui.horizontal(|ui| {

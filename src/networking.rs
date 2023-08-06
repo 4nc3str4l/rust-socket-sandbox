@@ -29,7 +29,7 @@ pub async fn network_processor(
                     Err(err) => println!("{:?}", err),
                 }
             }
-            Message::Message { id, payload } => {
+            Message::Message { id, payload, num_bytes } => {
                 // Here I need somehow to have websocket handles to choose one and give him the data
             }
             Message::Close { id } => {
@@ -60,12 +60,14 @@ pub async fn handle_new_client(
             match result {
                 Ok(message) => {
                     let data = message.into_data();
+                    let num_bytes = data.len();
                     let message_string = String::from_utf8(data).unwrap();
                     println!("{}", &message_string);
                     let _ = net_to_ui
                         .send(Message::Message {
                             id: idt.to_owned(),
                             payload: message_string,
+                            num_bytes
                         })
                         .await;
                 }
