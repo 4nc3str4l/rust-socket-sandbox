@@ -22,17 +22,9 @@ In addition to the features mentioned above, I'm looking to leverage the power a
 
 While I primarily use Windows for client-side development, I develop my servers on Linux, as any self-respecting server developer would do! Rust-Socket-Sandbox should work on both Windows and Linux, as well as MacOS. If you're using it on these platforms and encounter any issues, don't hesitate to let me know or open a PR. Your feedback would be much appreciated!
 
-## Getting Started
-
-To get started with Rust-Socket-Sandbox, please refer to the Getting Started Guide for installation and usage instructions.
-
-## Contributing
-
-While I initially developed Rust-Socket-Sandbox for personal use, I welcome any contributions to expand and improve its functionalities. Please check the Contribution Guidelines for more details.
-
 ## License
 
-Rust-Socket-Sandbox is licensed under the [License Name]. For more information, please see the LICENSE file.
+Rust-Socket-Sandbox is licensed under the MIT. For more information, please see the LICENSE file.
 
 ## Note
 
