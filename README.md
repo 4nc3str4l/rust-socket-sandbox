@@ -1,33 +1,39 @@
-# Rust Socket Sandbox
+# Rust-Socket-Sandbox
 
-Rust-Socket-Sandbox is an actively developed tool that provides an intuitive interface for interacting with WebSocket servers. It is specifically designed to simulate multiple users, facilitate manual message sending, and mimic user behaviors in a controlled environment.
-
-This tool offers a user-friendly interface and robust functionalities that empower developers, testers, and WebSocket enthusiasts to "play around" with a WebSocket server, enabling the observation of responses and behaviors under varying conditions.
+Rust-Socket-Sandbox is an actively developed tool that provides an intuitive interface for interacting with WebSocket servers. As a developer frequently working with real-time applications using WebSockets, I designed this tool to suit my personal needs and daily tasks. However, it's designed to be flexible, and if you find it useful in your own projects, you're welcome to use it!
 
 ## Core Features
 
-- **Multiple User Simulation**: Simulate numerous users interacting with your WebSocket server with ease. This can be crucial for understanding how your server handles multiple concurrent connections.
+- **Multiple User Simulation**: Simulate numerous users interacting with your WebSocket server. This feature allows you to understand how your server handles multiple concurrent connections.
 
-- **Manual Message Control**: Take full control over the messages that are sent to the server, providing fine-grained testing of server reactions to specific payloads.
+- **Manual Message Control**: Send custom messages to the server, offering a way to thoroughly test how your server reacts to specific payloads.
 
 ## Future Plans
 
-I am working on extending the capabilities of Rust-Socket-Sandbox, and here's a glimpse of what's on the horizon:
+My main focus is on enhancing the Rust-Socket-Sandbox to provide even more functionality:
 
-- **Stress Testing**: Aiming to equip Rust-Socket-Sandbox with stress testing capabilities to ensure your WebSocket server's resilience in high-load scenarios.
+- **Stress Testing**: I'm working on adding stress testing capabilities, helping ensure that WebSocket servers can handle high-load scenarios.
 
-- **Fuzzy Testing**: An upcoming feature is fuzzy testing, which will enable testing of your server's handling of unexpected or malformed inputs.
+- **Fuzzy Testing**: Fuzzy testing is in the works, which will allow for testing how a server handles unexpected or malformed inputs.
 
-Moreover, Rust-Socket-Sandbox seeks to leverage Rust's high performance to simulate more users than would be feasible with other languages. Utilizing Rust's async capabilities and Tokio, coupled with high-performance UI powered by Egui, the tool aims to provide an exceptional user experience while maintaining optimal performance.
+In addition to the features mentioned above, I'm looking to leverage the power and speed of Rust to simulate more users than would be feasible with other languages. By utilizing Rust's async capabilities and Tokio, along with a high-performance UI powered by Egui, I aim to create a tool that delivers a superior user experience while maintaining optimal performance.
+
+## Platform Support
+
+While I primarily use Windows for client-side development, I develop my servers on Linux, as any self-respecting server developer would do! Rust-Socket-Sandbox should work on both Windows and Linux, as well as MacOS. If you're using it on these platforms and encounter any issues, don't hesitate to let me know or open a PR. Your feedback would be much appreciated!
 
 ## Getting Started
 
-To start with Rust-Socket-Sandbox, refer to the Getting Started Guide for installation and usage instructions.
+To get started with Rust-Socket-Sandbox, please refer to the Getting Started Guide for installation and usage instructions.
 
 ## Contributing
 
-I warmly welcome any contributors who wish to improve and expand the functionalities of Rust-Socket-Sandbox. Please check the Contribution Guidelines for more details.
+While I initially developed Rust-Socket-Sandbox for personal use, I welcome any contributions to expand and improve its functionalities. Please check the Contribution Guidelines for more details.
 
 ## License
 
 Rust-Socket-Sandbox is licensed under the [License Name]. For more information, please see the LICENSE file.
+
+## Note
+
+This project is tailored to my personal requirements and workflow, and while I don't anticipate broad usage, you're welcome to use it if it suits your needs. There are no guarantees or support, but any feedback, suggestions, or contributions are appreciated. Enjoy using Rust-Socket-Sandbox!
