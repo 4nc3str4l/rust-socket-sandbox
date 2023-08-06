@@ -61,3 +61,9 @@ impl AppState {
             .push(ConnectionWindow::new(self.windows_open.to_string(), url));
     }
 }
+
+
+pub struct Message {
+    pub id: String,
+    pub payload: String,
+}

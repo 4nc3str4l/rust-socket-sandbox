@@ -1,15 +1,22 @@
-use crate::structs::AppState;
+use crate::structs::{AppState, Message};
 use eframe::egui;
 use egui::Context;
+use tokio::sync::mpsc::{Sender, Receiver};
 use std::sync::{Arc, Mutex};
 
 pub struct UI {
     pub app_state: Arc<Mutex<AppState>>,
+    pub ui_to_network: Sender<Message>,
+    pub network_to_ui: Receiver<Message>
 }
 
 impl UI {
-    pub fn new(app_state: Arc<Mutex<AppState>>) -> Self {
-        Self { app_state }
+    pub fn new(app_state: Arc<Mutex<AppState>>, uitn: Sender<Message>, ntui: Receiver<Message>) -> Self {
+        Self { 
+            app_state,
+            ui_to_network: uitn,
+            network_to_ui: ntui
+        }
     }
 
     pub fn run(&self) -> Result<(), eframe::Error> {
