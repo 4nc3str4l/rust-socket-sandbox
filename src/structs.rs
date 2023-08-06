@@ -55,15 +55,23 @@ pub struct AppState {
 }
 
 impl AppState {
-    pub fn insert_new_window(&mut self, url: String) {
+    pub fn insert_new_window(&mut self, url: String) -> u8 {
         self.windows_open += 1;
         self.connection_window
             .push(ConnectionWindow::new(self.windows_open.to_string(), url));
+        return self.windows_open;
     }
 }
 
+#[derive(Debug)]
+pub enum Operation {
+    NewClient,
+    Message,
+}
 
+#[derive(Debug)]
 pub struct Message {
     pub id: String,
+    pub operation: Operation,
     pub payload: String,
 }

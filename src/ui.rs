@@ -1,4 +1,4 @@
-use crate::structs::{AppState, Message};
+use crate::structs::{AppState, Message, Operation};
 use eframe::egui;
 use egui::Context;
 use tokio::sync::mpsc::{Sender, Receiver};
@@ -26,6 +26,7 @@ impl UI {
         };
 
         let app_state = Arc::clone(&self.app_state);
+        let utnw = self.ui_to_network.clone(); 
 
         eframe::run_simple_native("Rust Socket Sandbox", options, move |ctx, _frame| {
             egui::CentralPanel::default().show(ctx, |_ui| {
@@ -36,7 +37,11 @@ impl UI {
                         ui.text_edit_singleline(&mut state.editing_ip);
                         if ui.button("Create Connection").clicked() {
                             let editing_ip = state.editing_ip.clone();
-                            state.insert_new_window(editing_ip);
+                            let id = state.insert_new_window(editing_ip.to_owned());
+                            let utnw_clone = utnw.clone();
+                            tokio::spawn(async move {
+                                let _ = utnw_clone.send(Message { id: id.to_string(), operation: Operation::NewClient, payload: editing_ip.to_owned() }).await;
+                            });
                         }
                     });
                 });

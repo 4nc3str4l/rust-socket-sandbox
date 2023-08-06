@@ -1,22 +1,11 @@
-use tokio::sync::mpsc;
+use tokio::sync::mpsc::{Receiver, Sender};
+
+use crate::structs::Message;
 
 
 
-pub async fn packet_processor() {
-
-    let (tx, mut rx) = mpsc::channel::<String>(32);
-
-    let tx2 = tx.clone();
-
-    tokio::spawn(async move {
-        tx.send("Sending from first handle".to_owned()).await;
-    });
-
-    tokio::spawn(async move {
-        tx2.send("Sending fromt the second handle".to_owned()).await;
-    });
-
-    while let Some(message) = rx.recv().await  {
-        println!("GOT = {}", message);
+pub async fn client_spawner(ui_to_network: &mut Receiver<Message>, network_to_ui: &mut Sender<Message>) {
+    while let Some(message) = ui_to_network.recv().await  {
+        println!("GOT = {:?}", message);
     }
 }
