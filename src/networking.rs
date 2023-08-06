@@ -4,8 +4,7 @@ use tokio::sync::mpsc::{Receiver, Sender};
 
 use crate::structs::Message;
 use anyhow::Result;
-use futures_util::stream::SplitSink;
-use futures_util::{future, pin_mut, StreamExt};
+use futures_util::{StreamExt, stream::SplitSink};
 use tokio::net::TcpStream;
 use tokio_tungstenite::{connect_async, MaybeTlsStream, WebSocketStream};
 
