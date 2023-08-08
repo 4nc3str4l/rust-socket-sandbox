@@ -94,14 +94,14 @@ impl UI {
     ) {
         let ui_to_network_clone = ui_to_network.clone();
         let mut actions = Vec::new();
-    
+
         {
             let mut state = app_state.lock().unwrap();
             for window_index in 0..state.connection_window.len() {
                 let window_id = state.connection_window[window_index].id.clone();
                 let utn_for_send = ui_to_network_clone.clone();
                 let utn_for_disconnect = ui_to_network_clone.clone();
-    
+
                 egui::Window::new(&window_id.to_string())
                     .resizable(true)
                     .show(ctx, |ui| {
@@ -118,19 +118,21 @@ impl UI {
                                 ));
                             }
                         });
-    
+
                         ui.separator();
-    
+
                         ui.horizontal(|ui| {
                             ui.label(format!(
                                 "Sent / Recv [{} / {}] bytes",
                                 state.connection_window[window_index].connection.send_bytes,
-                                state.connection_window[window_index].connection.received_bytes
+                                state.connection_window[window_index]
+                                    .connection
+                                    .received_bytes
                             ));
                         });
-    
+
                         ui.separator();
-    
+
                         ui.horizontal(|ui| {
                             ui.label("Messages:");
                             egui::ScrollArea::vertical()
@@ -138,20 +140,48 @@ impl UI {
                                 .stick_to_bottom(true)
                                 .show(ui, |ui| {
                                     ui.vertical(|ui| {
-                                        for message in &state.connection_window[window_index].connection.messages {
-                                            ui.label(message);
+                                        for message in &state.connection_window[window_index]
+                                            .connection
+                                            .messages
+                                        {
+                                            ui.horizontal(|ui| {
+                                                if ui
+                                                    .button("📋")
+                                                    .on_hover_text("Click to copy")
+                                                    .clicked()
+                                                {
+                                                    ui.output_mut(|o| {
+                                                        o.copied_text = message.to_string()
+                                                    });
+                                                }
+                                                ui.add(egui::Label::new(message).wrap(true));
+                                            });
                                         }
                                     });
                                 });
                         });
-    
+
                         ui.separator();
-    
+
                         ui.horizontal(|ui| {
-                            if ui.text_edit_multiline(&mut state.connection_window[window_index].connection.editing_message).changed() {
+                            if ui
+                                .add_sized(
+                                    ui.available_size(),
+                                    egui::TextEdit::multiline(
+                                        &mut state.connection_window[window_index]
+                                            .connection
+                                            .editing_message,
+                                    ),
+                                )
+                                .changed()
+                            {
                                 if ui.input(|ev| ev.key_pressed(egui::Key::Enter)) {
-                                    let msg = state.connection_window[window_index].connection.editing_message.clone();
-                                    actions.push(WindowAction::UpdateMessage(window_id, msg.clone()));
+                                    let msg = state.connection_window[window_index]
+                                        .connection
+                                        .editing_message
+                                        .clone();
+                                    actions
+                                        .push(WindowAction::UpdateMessage(window_id, msg.clone()));
                                     actions.push(WindowAction::Send(
                                         utn_for_send,
                                         Message::Message {
@@ -166,7 +196,7 @@ impl UI {
                     });
             }
         }
-    
+
         // Process actions
         let mut state = app_state.lock().unwrap();
         for action in actions {
@@ -188,12 +218,13 @@ impl UI {
                 }
             }
         }
-    
+
         let windows_to_remove = state.windows_to_remove.clone();
-        state.connection_window.retain(|window| !windows_to_remove.contains(&window.id));
+        state
+            .connection_window
+            .retain(|window| !windows_to_remove.contains(&window.id));
         state.windows_to_remove.clear();
     }
-    
 }
 enum WindowAction {
     Disconnect(u8),
