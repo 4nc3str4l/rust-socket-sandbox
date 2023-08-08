@@ -32,6 +32,7 @@ impl UI {
         let app_state = Arc::clone(&self.app_state);
         let utnw = self.ui_to_network.clone();
         let ntui = Arc::clone(&self.network_to_ui);
+        let uitn = self.ui_to_network.clone();
 
         eframe::run_simple_native("Rust Socket Sandbox", options, move |ctx, _frame| {
             egui::CentralPanel::default().show(ctx, |_ui| {
@@ -47,7 +48,7 @@ impl UI {
                             tokio::spawn(async move {
                                 let _ = utnw_clone
                                     .send(Message::NewClient {
-                                        id: (id.to_string()),
+                                        id: (id),
                                         ip: editing_ip.to_string(),
                                     })
                                     .await;
@@ -80,52 +81,122 @@ impl UI {
                 }
             }
 
-            Self::render_windows(ctx, &app_state);
+            Self::render_windows(ctx, app_state.clone(), utnw.clone());
 
             ctx.request_repaint();
         })
     }
 
-    fn render_windows(ctx: &Context, app_state: &Arc<Mutex<AppState>>) {
-        let mut state = app_state.lock().unwrap();
-        for connection_window in &mut state.connection_window {
-            egui::Window::new(&connection_window.id).show(ctx, |ui| {
-                ui.horizontal(|ui| {
-                    ui.label("Ip Address:");
-                    ui.label(&connection_window.connection.url);
-                    if ui.button("Connect").clicked() {
-                        connection_window.connection.is_connected = true;
-                    }
-                });
-                ui.separator();
-                ui.horizontal(|ui| {
-                    ui.label(format!(
-                        "Sent / Recv [{} / {}] bytes",
-                        connection_window.connection.send_bytes,
-                        connection_window.connection.received_bytes
-                    ));
-                });
-                ui.separator();
-                ui.horizontal(|ui| {
-                    ui.label("Messages:");
-                    ui.vertical(|ui| {
-                        for message in &connection_window.connection.messages {
-                            ui.label(message);
-                        }
+    fn render_windows(
+        ctx: &Context,
+        app_state: Arc<Mutex<AppState>>,
+        ui_to_network: Sender<Message>,
+    ) {
+        let ui_to_network_clone = ui_to_network.clone();
+        let mut actions = Vec::new();
+    
+        {
+            let mut state = app_state.lock().unwrap();
+            for window_index in 0..state.connection_window.len() {
+                let window_id = state.connection_window[window_index].id.clone();
+                let utn_for_send = ui_to_network_clone.clone();
+                let utn_for_disconnect = ui_to_network_clone.clone();
+    
+                egui::Window::new(&window_id.to_string())
+                    .resizable(true)
+                    .show(ctx, |ui| {
+                        ui.horizontal(|ui| {
+                            ui.label("Ip Address:");
+                            ui.label(&state.connection_window[window_index].connection.url);
+                            if ui.button("Disconnect").clicked() {
+                                actions.push(WindowAction::Disconnect(window_id));
+                                actions.push(WindowAction::Send(
+                                    utn_for_disconnect,
+                                    Message::Close {
+                                        id: window_id.clone(),
+                                    },
+                                ));
+                            }
+                        });
+    
+                        ui.separator();
+    
+                        ui.horizontal(|ui| {
+                            ui.label(format!(
+                                "Sent / Recv [{} / {}] bytes",
+                                state.connection_window[window_index].connection.send_bytes,
+                                state.connection_window[window_index].connection.received_bytes
+                            ));
+                        });
+    
+                        ui.separator();
+    
+                        ui.horizontal(|ui| {
+                            ui.label("Messages:");
+                            egui::ScrollArea::vertical()
+                                .min_scrolled_height(400.)
+                                .stick_to_bottom(true)
+                                .show(ui, |ui| {
+                                    ui.vertical(|ui| {
+                                        for message in &state.connection_window[window_index].connection.messages {
+                                            ui.label(message);
+                                        }
+                                    });
+                                });
+                        });
+    
+                        ui.separator();
+    
+                        ui.horizontal(|ui| {
+                            if ui.text_edit_multiline(&mut state.connection_window[window_index].connection.editing_message).changed() {
+                                if ui.input(|ev| ev.key_pressed(egui::Key::Enter)) {
+                                    let msg = state.connection_window[window_index].connection.editing_message.clone();
+                                    actions.push(WindowAction::UpdateMessage(window_id, msg.clone()));
+                                    actions.push(WindowAction::Send(
+                                        utn_for_send,
+                                        Message::Message {
+                                            id: window_id,
+                                            payload: msg,
+                                            num_bytes: 0,
+                                        },
+                                    ));
+                                }
+                            }
+                        });
                     });
-                });
-                ui.separator();
-                ui.horizontal(|ui| {
-                    ui.text_edit_multiline(&mut connection_window.connection.editing_message);
-                    if ui.button("Send").clicked() {
-                        connection_window
-                            .connection
-                            .messages
-                            .push(connection_window.connection.editing_message.clone());
-                        connection_window.connection.editing_message.clear();
-                    }
-                });
-            });
+            }
         }
+    
+        // Process actions
+        let mut state = app_state.lock().unwrap();
+        for action in actions {
+            match action {
+                WindowAction::Disconnect(id) => {
+                    state.windows_to_remove.push(id);
+                }
+                WindowAction::UpdateMessage(id, msg) => {
+                    if let Some(window) = state.connection_window.iter_mut().find(|w| w.id == id) {
+                        window.connection.messages.push(msg.clone());
+                        window.connection.editing_message.clear();
+                        window.connection.send_bytes += msg.as_bytes().len();
+                    }
+                }
+                WindowAction::Send(sender, message) => {
+                    tokio::spawn(async move {
+                        let _ = sender.send(message).await;
+                    });
+                }
+            }
+        }
+    
+        let windows_to_remove = state.windows_to_remove.clone();
+        state.connection_window.retain(|window| !windows_to_remove.contains(&window.id));
+        state.windows_to_remove.clear();
     }
+    
+}
+enum WindowAction {
+    Disconnect(u8),
+    UpdateMessage(u8, String),
+    Send(Sender<Message>, Message),
 }

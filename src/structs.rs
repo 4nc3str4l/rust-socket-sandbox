@@ -22,7 +22,7 @@ impl Connection {
 }
 
 pub struct ConnectionWindow {
-    pub id: String,
+    pub id: u8,
     pub is_open: bool,
     pub connection: Connection,
 }
@@ -30,7 +30,7 @@ pub struct ConnectionWindow {
 impl Default for ConnectionWindow {
     fn default() -> Self {
         Self {
-            id: String::new(),
+            id: 0,
             is_open: true,
             connection: Connection::default(),
         }
@@ -38,7 +38,7 @@ impl Default for ConnectionWindow {
 }
 
 impl ConnectionWindow {
-    pub fn new(id: String, url: String) -> Self {
+    pub fn new(id: u8, url: String) -> Self {
         Self {
             id,
             is_open: true,
@@ -52,20 +52,21 @@ pub struct AppState {
     pub connection_window: Vec<ConnectionWindow>,
     pub editing_ip: String,
     pub windows_open: u8,
+    pub windows_to_remove: Vec<u8>,
 }
 
 impl AppState {
     pub fn insert_new_window(&mut self, url: String) -> u8 {
         self.windows_open += 1;
         self.connection_window
-            .push(ConnectionWindow::new(self.windows_open.to_string(), url));
+            .push(ConnectionWindow::new(self.windows_open, url));
         return self.windows_open;
     }
 }
 
 #[derive(Debug)]
 pub enum Message {
-    NewClient { id: String, ip: String },
-    Message { id: String, payload: String, num_bytes: usize },
-    Close { id: String },
+    NewClient { id: u8, ip: String },
+    Message { id: u8, payload: String, num_bytes: usize },
+    Close { id: u8 },
 }

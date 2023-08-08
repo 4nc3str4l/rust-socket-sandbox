@@ -4,7 +4,8 @@ use tokio::sync::mpsc::{Receiver, Sender};
 
 use crate::structs::Message;
 use anyhow::Result;
-use futures_util::{StreamExt, stream::SplitSink};
+use futures_util::sink::SinkExt;
+use futures_util::{stream::SplitSink, StreamExt};
 use tokio::net::TcpStream;
 use tokio_tungstenite::{connect_async, MaybeTlsStream, WebSocketStream};
 
@@ -13,9 +14,10 @@ pub async fn network_processor(
     network_to_ui: &mut Sender<Message>,
 ) {
     let mut connection_map: HashMap<
-        String,
+        u8,
         SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>>, tungstenite::Message>,
     > = HashMap::new();
+
     let net_to_ui = network_to_ui;
     while let Some(message) = ui_to_network.recv().await {
         println!("Network = {:?}", message);
@@ -24,16 +26,31 @@ pub async fn network_processor(
                 let res = handle_new_client(net_to_ui.clone(), id.to_owned(), ip.to_owned()).await;
                 match res {
                     Ok(sender) => {
-                        connection_map.insert(id.to_owned(), sender);
+                        connection_map.insert(id, sender);
                     }
                     Err(err) => println!("{:?}", err),
                 }
             }
-            Message::Message { id, payload, num_bytes } => {
-                // Here I need somehow to have websocket handles to choose one and give him the data
+            Message::Message {
+                id,
+                payload,
+                num_bytes,
+            } => {
+                println!("id={}, payload={}, num_bytes={}", id, payload, num_bytes);
+                match connection_map.get_mut(&id) {
+                    Some(ws) => {
+                        let _ = ws.send(tungstenite::Message::Text(payload)).await;
+                    }
+                    None => todo!(),
+                }
             }
             Message::Close { id } => {
-                // Here I need to close the socket and remove it from the list
+                if let Some(mut ws_sink) = connection_map.remove(&id) {
+                    let _ = ws_sink.send(tungstenite::Message::Close(None)).await;
+                    println!("Closed WebSocket for ID: {}", id);
+                } else {
+                    println!("Failed to find WebSocket for ID: {}", id);
+                }
             }
         }
     }
@@ -41,7 +58,7 @@ pub async fn network_processor(
 
 pub async fn handle_new_client(
     network_to_ui: Sender<Message>,
-    id: String,
+    id: u8,
     ip: String,
 ) -> Result<
     SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>>, tungstenite::Message>,
@@ -67,7 +84,7 @@ pub async fn handle_new_client(
                         .send(Message::Message {
                             id: idt.to_owned(),
                             payload: message_string,
-                            num_bytes
+                            num_bytes,
                         })
                         .await;
                 }
