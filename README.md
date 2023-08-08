@@ -2,6 +2,10 @@
 
 Rust-Socket-Sandbox is an actively developed tool that provides an intuitive interface for interacting with WebSocket servers. As a developer frequently working with real-time applications using WebSockets, I designed this tool to suit my personal needs and daily tasks. However, it's designed to be flexible, and if you find it useful in your own projects, you're welcome to use it!
 
+<div align=center>
+    <img src="app_ui.PNG" alt="logo" height="400">
+</div>
+
 ## Core Features
 
 - **Multiple User Simulation**: Simulate numerous users interacting with your WebSocket server. This feature allows you to understand how your server handles multiple concurrent connections.
