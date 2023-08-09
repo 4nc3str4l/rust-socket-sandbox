@@ -1,5 +1,6 @@
 use crate::structs::{AppState, Message};
 use eframe::egui;
+use egui::plot::{Line, PlotPoints};
 use egui::Context;
 use std::sync::{Arc, Mutex};
 use tokio::sync::mpsc::{Receiver, Sender};
@@ -81,6 +82,23 @@ impl UI {
             }
 
             render_windows(ctx, app_state.clone(), utnw.clone());
+            
+            // Example of how I could render a plot
+            egui::Window::new("Connection Statistics").resizable(true).show(ctx, |ui| {
+                let n = 128;
+
+                let line_points = (0..=n)
+                    .map(|i| {
+                        use std::f64::consts::TAU;
+                        let x = egui::remap(i as f64, 0.0..=n as f64, -TAU..=TAU);
+                        [x, x.sin()]
+                    })
+                    .collect::<Vec<_>>();
+
+                let line = Line::new(line_points);
+
+                egui::plot::Plot::new("connection_stats ").show(ui, |plot_ui| plot_ui.line(line));
+            });
 
             ctx.request_repaint();
         })
