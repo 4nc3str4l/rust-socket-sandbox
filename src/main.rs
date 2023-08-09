@@ -12,8 +12,8 @@ use tokio::sync::mpsc;
 
 #[tokio::main]
 async fn main() -> Result<(), eframe::Error> {
-    let (mut ui2ntx, mut ui2nrx) = mpsc::channel::<Message>(12);
-    let (mut n2uitx, mut ntuirx) = mpsc::channel::<Message>(200);
+    let (ui2ntx, mut ui2nrx) = mpsc::channel::<Message>(12);
+    let (mut n2uitx, ntuirx) = mpsc::channel::<Message>(200);
 
     tokio::spawn(async move {
         network_processor(&mut ui2nrx, &mut n2uitx).await;
