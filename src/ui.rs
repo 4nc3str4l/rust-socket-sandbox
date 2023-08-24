@@ -1,6 +1,6 @@
 use crate::structs::{AppState, Message};
 use eframe::egui;
-use egui::Context;
+use egui::{CollapsingHeader, Context, Resize};
 use std::sync::{Arc, Mutex};
 use tokio::sync::mpsc::{Receiver, Sender};
 
@@ -22,8 +22,6 @@ impl UI {
             network_to_ui: Arc::new(Mutex::new(ntui)),
         }
     }
-
-
 
     pub async fn run(&self) -> Result<(), eframe::Error> {
         let options = eframe::NativeOptions {
@@ -101,6 +99,15 @@ pub fn create_connection(app_state: Arc<Mutex<AppState>>, ui_to_network: Sender<
     });
 }
 
+#[derive(PartialEq)]
+enum SendOptions {
+    Periodically,
+    Random,
+    Manual,
+    File,
+    N,
+}
+
 fn render_windows(ctx: &Context, app_state: Arc<Mutex<AppState>>, ui_to_network: Sender<Message>) {
     let ui_to_network_clone = ui_to_network.clone();
     let mut actions = Vec::new();
@@ -171,6 +178,16 @@ fn render_windows(ctx: &Context, app_state: Arc<Mutex<AppState>>, ui_to_network:
                     });
 
                     ui.separator();
+
+                    let mut send_option = SendOptions::Manual;
+                    ui.label("Send Options:");
+                    ui.horizontal(|ui| {
+                        ui.radio_value(&mut send_option, SendOptions::Manual, "Manual");
+                        ui.radio_value(&mut send_option, SendOptions::Periodically, "Periodically");
+                        ui.radio_value(&mut send_option, SendOptions::Random, "Random");
+                        ui.radio_value(&mut send_option, SendOptions::File, "File");
+                        ui.radio_value(&mut send_option, SendOptions::N, "N");
+                    });
 
                     ui.horizontal(|ui| {
                         if ui
