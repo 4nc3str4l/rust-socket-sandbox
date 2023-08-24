@@ -32,7 +32,8 @@ impl UI {
         let app_state = Arc::clone(&self.app_state);
         let utnw = self.ui_to_network.clone();
         let ntui = Arc::clone(&self.network_to_ui);
-        let uitn = self.ui_to_network.clone();
+
+        let mut create_connection = false;
 
         eframe::run_simple_native("Rust Socket Sandbox", options, move |ctx, _frame| {
             egui::CentralPanel::default().show(ctx, |_ui| {
@@ -42,17 +43,7 @@ impl UI {
                         ui.label("Ip Address:");
                         ui.text_edit_singleline(&mut state.editing_ip);
                         if ui.button("Create Connection").clicked() {
-                            let editing_ip = state.editing_ip.clone();
-                            let id = state.insert_new_window(editing_ip.to_owned());
-                            let utnw_clone = utnw.clone();
-                            tokio::spawn(async move {
-                                let _ = utnw_clone
-                                    .send(Message::NewClient {
-                                        id: (id),
-                                        ip: editing_ip.to_string(),
-                                    })
-                                    .await;
-                            });
+                            create_connection = true && !state.editing_ip.is_empty();
                         }
                     });
                 });
@@ -79,6 +70,22 @@ impl UI {
                     }
                     Message::Close { id } => todo!(),
                 }
+            }
+
+            if create_connection {
+                create_connection = false;
+                let mut state = app_state.lock().unwrap();
+                let editing_ip = state.editing_ip.clone();
+                let id = state.insert_new_window(editing_ip.to_owned());
+                let utnw_clone = utnw.clone();
+                tokio::spawn(async move {
+                    let _ = utnw_clone
+                        .send(Message::NewClient {
+                            id: (id),
+                            ip: editing_ip.to_string(),
+                        })
+                        .await;
+                });
             }
 
             Self::render_windows(ctx, app_state.clone(), utnw.clone());
