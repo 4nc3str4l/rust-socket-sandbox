@@ -1,3 +1,5 @@
+use tokio::sync::mpsc::Sender;
+
 #[derive(Default)]
 pub struct Connection {
     pub is_connected: bool,
@@ -25,6 +27,7 @@ pub struct ConnectionWindow {
     pub id: u8,
     pub is_open: bool,
     pub connection: Connection,
+    pub send_option: SendOptions,
 }
 
 impl Default for ConnectionWindow {
@@ -33,6 +36,7 @@ impl Default for ConnectionWindow {
             id: 0,
             is_open: true,
             connection: Connection::default(),
+            send_option: SendOptions::Manual,
         }
     }
 }
@@ -43,6 +47,7 @@ impl ConnectionWindow {
             id,
             is_open: true,
             connection: Connection::new(url),
+            send_option: SendOptions::Manual,
         }
     }
 }
@@ -69,4 +74,19 @@ pub enum Message {
     NewClient { id: u8, ip: String },
     Message { id: u8, payload: String, num_bytes: usize },
     Close { id: u8 },
+}
+
+#[derive(PartialEq)]
+pub enum SendOptions {
+    Periodically,
+    Random,
+    Manual,
+    File,
+    N,
+}
+
+pub enum WindowAction {
+    Disconnect(u8),
+    UpdateMessage(u8, String),
+    Send(Sender<Message>, Message),
 }

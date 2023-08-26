@@ -1,4 +1,4 @@
-use crate::structs::{AppState, Message};
+use crate::structs::{AppState, Message, SendOptions, WindowAction};
 use eframe::egui;
 use egui::{CollapsingHeader, Context, Resize};
 use std::sync::{Arc, Mutex};
@@ -99,15 +99,6 @@ pub fn create_connection(app_state: Arc<Mutex<AppState>>, ui_to_network: Sender<
     });
 }
 
-#[derive(PartialEq)]
-enum SendOptions {
-    Periodically,
-    Random,
-    Manual,
-    File,
-    N,
-}
-
 fn render_windows(ctx: &Context, app_state: Arc<Mutex<AppState>>, ui_to_network: Sender<Message>) {
     let ui_to_network_clone = ui_to_network.clone();
     let mut actions = Vec::new();
@@ -179,45 +170,75 @@ fn render_windows(ctx: &Context, app_state: Arc<Mutex<AppState>>, ui_to_network:
 
                     ui.separator();
 
-                    let mut send_option = SendOptions::Manual;
                     ui.label("Send Options:");
                     ui.horizontal(|ui| {
-                        ui.radio_value(&mut send_option, SendOptions::Manual, "Manual");
-                        ui.radio_value(&mut send_option, SendOptions::Periodically, "Periodically");
-                        ui.radio_value(&mut send_option, SendOptions::Random, "Random");
-                        ui.radio_value(&mut send_option, SendOptions::File, "File");
-                        ui.radio_value(&mut send_option, SendOptions::N, "N");
+                        ui.radio_value(
+                            &mut state.connection_window[window_index].send_option,
+                            SendOptions::Manual,
+                            "Manual",
+                        );
+                        ui.radio_value(
+                            &mut state.connection_window[window_index].send_option,
+                            SendOptions::Periodically,
+                            "Periodically",
+                        );
+                        ui.radio_value(
+                            &mut state.connection_window[window_index].send_option,
+                            SendOptions::Random,
+                            "Random",
+                        );
+                        ui.radio_value(
+                            &mut state.connection_window[window_index].send_option,
+                            SendOptions::File,
+                            "File",
+                        );
+                        ui.radio_value(
+                            &mut state.connection_window[window_index].send_option,
+                            SendOptions::N,
+                            "N",
+                        );
                     });
 
-                    ui.horizontal(|ui| {
-                        if ui
-                            .add_sized(
-                                ui.available_size(),
-                                egui::TextEdit::multiline(
-                                    &mut state.connection_window[window_index]
-                                        .connection
-                                        .editing_message,
-                                ),
-                            )
-                            .changed()
-                        {
-                            if ui.input(|ev| ev.key_pressed(egui::Key::Enter)) {
-                                let msg = state.connection_window[window_index]
-                                    .connection
-                                    .editing_message
-                                    .clone();
-                                actions.push(WindowAction::UpdateMessage(window_id, msg.clone()));
-                                actions.push(WindowAction::Send(
-                                    utn_for_send,
-                                    Message::Message {
-                                        id: window_id,
-                                        payload: msg,
-                                        num_bytes: 0,
-                                    },
-                                ));
-                            }
+                    match state.connection_window[window_index].send_option {
+                        SendOptions::Periodically => {}
+                        SendOptions::Random => {}
+                        SendOptions::Manual => {
+                            ui.horizontal(|ui| {
+                                if ui
+                                    .add_sized(
+                                        ui.available_size(),
+                                        egui::TextEdit::multiline(
+                                            &mut state.connection_window[window_index]
+                                                .connection
+                                                .editing_message,
+                                        ),
+                                    )
+                                    .changed()
+                                {
+                                    if ui.input(|ev| ev.key_pressed(egui::Key::Enter)) {
+                                        let msg = state.connection_window[window_index]
+                                            .connection
+                                            .editing_message
+                                            .clone();
+                                        actions.push(WindowAction::UpdateMessage(
+                                            window_id,
+                                            msg.clone(),
+                                        ));
+                                        actions.push(WindowAction::Send(
+                                            utn_for_send,
+                                            Message::Message {
+                                                id: window_id,
+                                                payload: msg,
+                                                num_bytes: 0,
+                                            },
+                                        ));
+                                    }
+                                }
+                            });
                         }
-                    });
+                        SendOptions::File => {}
+                        SendOptions::N => {}
+                    }
                 });
         }
     }
@@ -249,10 +270,4 @@ fn render_windows(ctx: &Context, app_state: Arc<Mutex<AppState>>, ui_to_network:
         .connection_window
         .retain(|window| !windows_to_remove.contains(&window.id));
     state.windows_to_remove.clear();
-}
-
-enum WindowAction {
-    Disconnect(u8),
-    UpdateMessage(u8, String),
-    Send(Sender<Message>, Message),
 }
