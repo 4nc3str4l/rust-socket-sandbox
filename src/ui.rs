@@ -59,7 +59,7 @@ impl UI {
                         num_bytes,
                     } => {
                         let mut state = app_state.lock().unwrap();
-                        for window in state.connection_window.iter_mut() {
+                        for window in state.connections.iter_mut() {
                             if window.id == id {
                                 window.connection.messages.push(payload.to_owned());
                                 window.connection.received_bytes += num_bytes;
@@ -105,8 +105,8 @@ fn render_windows(ctx: &Context, app_state: Arc<Mutex<AppState>>, ui_to_network:
 
     {
         let mut state = app_state.lock().unwrap();
-        for window_index in 0..state.connection_window.len() {
-            let window_id = state.connection_window[window_index].id.clone();
+        for window_index in 0..state.connections.len() {
+            let window_id = state.connections[window_index].id.clone();
             let utn_for_send = ui_to_network_clone.clone();
             let utn_for_disconnect = ui_to_network_clone.clone();
 
@@ -115,7 +115,7 @@ fn render_windows(ctx: &Context, app_state: Arc<Mutex<AppState>>, ui_to_network:
                 .show(ctx, |ui| {
                     ui.horizontal(|ui| {
                         ui.label("Ip Address:");
-                        ui.label(&state.connection_window[window_index].connection.url);
+                        ui.label(&state.connections[window_index].connection.url);
                         if ui.button("Disconnect").clicked() {
                             actions.push(WindowAction::Disconnect(window_id));
                             actions.push(WindowAction::Send(
@@ -132,8 +132,8 @@ fn render_windows(ctx: &Context, app_state: Arc<Mutex<AppState>>, ui_to_network:
                     ui.horizontal(|ui| {
                         ui.label(format!(
                             "Sent / Recv [{} / {}] bytes",
-                            state.connection_window[window_index].connection.send_bytes,
-                            state.connection_window[window_index]
+                            state.connections[window_index].connection.send_bytes,
+                            state.connections[window_index]
                                 .connection
                                 .received_bytes
                         ));
@@ -149,7 +149,7 @@ fn render_windows(ctx: &Context, app_state: Arc<Mutex<AppState>>, ui_to_network:
                             .show(ui, |ui| {
                                 ui.vertical(|ui| {
                                     for message in
-                                        &state.connection_window[window_index].connection.messages
+                                        &state.connections[window_index].connection.messages
                                     {
                                         ui.horizontal(|ui| {
                                             if ui
@@ -173,33 +173,33 @@ fn render_windows(ctx: &Context, app_state: Arc<Mutex<AppState>>, ui_to_network:
                     ui.label("Send Options:");
                     ui.horizontal(|ui| {
                         ui.radio_value(
-                            &mut state.connection_window[window_index].send_option,
+                            &mut state.connections[window_index].send_option,
                             SendOptions::Manual,
                             "Manual",
                         );
                         ui.radio_value(
-                            &mut state.connection_window[window_index].send_option,
+                            &mut state.connections[window_index].send_option,
                             SendOptions::Periodically,
                             "Periodically",
                         );
                         ui.radio_value(
-                            &mut state.connection_window[window_index].send_option,
+                            &mut state.connections[window_index].send_option,
                             SendOptions::Random,
                             "Random",
                         );
                         ui.radio_value(
-                            &mut state.connection_window[window_index].send_option,
+                            &mut state.connections[window_index].send_option,
                             SendOptions::File,
                             "File",
                         );
                         ui.radio_value(
-                            &mut state.connection_window[window_index].send_option,
+                            &mut state.connections[window_index].send_option,
                             SendOptions::N,
                             "N",
                         );
                     });
 
-                    match state.connection_window[window_index].send_option {
+                    match state.connections[window_index].send_option {
                         SendOptions::Periodically => {}
                         SendOptions::Random => {}
                         SendOptions::Manual => {
@@ -208,7 +208,7 @@ fn render_windows(ctx: &Context, app_state: Arc<Mutex<AppState>>, ui_to_network:
                                     .add_sized(
                                         ui.available_size(),
                                         egui::TextEdit::multiline(
-                                            &mut state.connection_window[window_index]
+                                            &mut state.connections[window_index]
                                                 .connection
                                                 .editing_message,
                                         ),
@@ -216,7 +216,7 @@ fn render_windows(ctx: &Context, app_state: Arc<Mutex<AppState>>, ui_to_network:
                                     .changed()
                                 {
                                     if ui.input(|ev| ev.key_pressed(egui::Key::Enter)) {
-                                        let msg = state.connection_window[window_index]
+                                        let msg = state.connections[window_index]
                                             .connection
                                             .editing_message
                                             .clone();
@@ -251,7 +251,7 @@ fn render_windows(ctx: &Context, app_state: Arc<Mutex<AppState>>, ui_to_network:
                 state.windows_to_remove.push(id);
             }
             WindowAction::UpdateMessage(id, msg) => {
-                if let Some(window) = state.connection_window.iter_mut().find(|w| w.id == id) {
+                if let Some(window) = state.connections.iter_mut().find(|w| w.id == id) {
                     window.connection.messages.push(msg.clone());
                     window.connection.editing_message.clear();
                     window.connection.send_bytes += msg.as_bytes().len();
@@ -267,7 +267,7 @@ fn render_windows(ctx: &Context, app_state: Arc<Mutex<AppState>>, ui_to_network:
 
     let windows_to_remove = state.windows_to_remove.clone();
     state
-        .connection_window
+        .connections
         .retain(|window| !windows_to_remove.contains(&window.id));
     state.windows_to_remove.clear();
 }

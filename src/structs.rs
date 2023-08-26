@@ -54,7 +54,7 @@ impl ConnectionWindow {
 
 #[derive(Default)]
 pub struct AppState {
-    pub connection_window: Vec<ConnectionWindow>,
+    pub connections: Vec<ConnectionWindow>,
     pub editing_ip: String,
     pub windows_open: u8,
     pub windows_to_remove: Vec<u8>,
@@ -63,7 +63,7 @@ pub struct AppState {
 impl AppState {
     pub fn insert_new_window(&mut self, url: String) -> u8 {
         self.windows_open += 1;
-        self.connection_window
+        self.connections
             .push(ConnectionWindow::new(self.windows_open, url));
         return self.windows_open;
     }
