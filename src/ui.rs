@@ -1,9 +1,9 @@
 use crate::structs::{AppState, Message, SendOptions, WindowAction};
+use crate::utils::is_valid_websocket_ip;
 use eframe::egui;
 use egui::{CollapsingHeader, Context, Resize};
 use std::sync::{Arc, Mutex};
 use tokio::sync::mpsc::{Receiver, Sender};
-use crate::utils::is_valid_websocket_ip;
 
 pub struct UI {
     pub app_state: Arc<Mutex<AppState>>,
@@ -57,7 +57,6 @@ impl UI {
                             } else {
                                 state.in_error = true;
                             }
-
                         }
                     });
                 });
@@ -215,38 +214,14 @@ fn render_windows(ctx: &Context, app_state: Arc<Mutex<AppState>>, ui_to_network:
                         SendOptions::Periodically => {}
                         SendOptions::Random => {}
                         SendOptions::Manual => {
-                            ui.horizontal(|ui| {
-                                if ui
-                                    .add_sized(
-                                        ui.available_size(),
-                                        egui::TextEdit::multiline(
-                                            &mut state.connections[window_index]
-                                                .connection
-                                                .editing_message,
-                                        ),
-                                    )
-                                    .changed()
-                                {
-                                    if ui.input(|ev| ev.key_pressed(egui::Key::Enter)) {
-                                        let msg = state.connections[window_index]
-                                            .connection
-                                            .editing_message
-                                            .clone();
-                                        actions.push(WindowAction::UpdateMessage(
-                                            window_id,
-                                            msg.clone(),
-                                        ));
-                                        actions.push(WindowAction::Send(
-                                            utn_for_send,
-                                            Message::Message {
-                                                id: window_id,
-                                                payload: msg,
-                                                num_bytes: 0,
-                                            },
-                                        ));
-                                    }
-                                }
-                            });
+                            chat_input(
+                                ui,
+                                &mut state,
+                                window_index,
+                                &mut actions,
+                                window_id,
+                                utn_for_send,
+                            );
                         }
                         SendOptions::File => {}
                         SendOptions::N => {}
@@ -282,4 +257,41 @@ fn render_windows(ctx: &Context, app_state: Arc<Mutex<AppState>>, ui_to_network:
         .connections
         .retain(|window| !windows_to_remove.contains(&window.id));
     state.windows_to_remove.clear();
+}
+
+fn chat_input(
+    ui: &mut egui::Ui,
+    state: &mut std::sync::MutexGuard<'_, AppState>,
+    window_index: usize,
+    actions: &mut Vec<WindowAction>,
+    window_id: u8,
+    utn_for_send: Sender<Message>,
+) {
+    ui.horizontal(|ui| {
+        if ui
+            .add_sized(
+                ui.available_size(),
+                egui::TextEdit::multiline(
+                    &mut state.connections[window_index].connection.editing_message,
+                ),
+            )
+            .changed()
+        {
+            if ui.input(|ev| ev.key_pressed(egui::Key::Enter)) {
+                let msg = state.connections[window_index]
+                    .connection
+                    .editing_message
+                    .clone();
+                actions.push(WindowAction::UpdateMessage(window_id, msg.clone()));
+                actions.push(WindowAction::Send(
+                    utn_for_send,
+                    Message::Message {
+                        id: window_id,
+                        payload: msg,
+                        num_bytes: 0,
+                    },
+                ));
+            }
+        }
+    });
 }
