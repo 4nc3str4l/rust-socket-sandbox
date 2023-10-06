@@ -3,6 +3,7 @@ use eframe::egui;
 use egui::{CollapsingHeader, Context, Resize};
 use std::sync::{Arc, Mutex};
 use tokio::sync::mpsc::{Receiver, Sender};
+use crate::utils::is_valid_websocket_ip;
 
 pub struct UI {
     pub app_state: Arc<Mutex<AppState>>,
@@ -38,12 +39,25 @@ impl UI {
         eframe::run_simple_native("Rust Socket Sandbox", options, move |ctx, _frame| {
             egui::CentralPanel::default().show(ctx, |_ui| {
                 egui::Window::new("Connection Manager").show(ctx, |ui| {
+                    let mut state = app_state.lock().unwrap();
+                    if state.in_error {
+                        ui.horizontal(|ui| {
+                            ui.centered_and_justified(|ui| {
+                                ui.colored_label(egui::Color32::RED, "Invalid IP Address");
+                            });
+                        });
+                    }
                     ui.horizontal(|ui| {
-                        let mut state = app_state.lock().unwrap();
                         ui.label("Ip Address:");
                         ui.text_edit_singleline(&mut state.editing_ip);
                         if ui.button("Create Connection").clicked() {
-                            should_create_connection = true && !state.editing_ip.is_empty();
+                            if is_valid_websocket_ip(&state.editing_ip) {
+                                state.in_error = false;
+                                should_create_connection = true && !state.editing_ip.is_empty();
+                            } else {
+                                state.in_error = true;
+                            }
+
                         }
                     });
                 });
@@ -133,9 +147,7 @@ fn render_windows(ctx: &Context, app_state: Arc<Mutex<AppState>>, ui_to_network:
                         ui.label(format!(
                             "Sent / Recv [{} / {}] bytes",
                             state.connections[window_index].connection.send_bytes,
-                            state.connections[window_index]
-                                .connection
-                                .received_bytes
+                            state.connections[window_index].connection.received_bytes
                         ));
                     });
 

@@ -56,6 +56,7 @@ impl ConnectionWindow {
 pub struct AppState {
     pub connections: Vec<ConnectionWindow>,
     pub editing_ip: String,
+    pub in_error: bool,
     pub windows_open: u8,
     pub windows_to_remove: Vec<u8>,
 }

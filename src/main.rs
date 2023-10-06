@@ -3,6 +3,7 @@
 mod networking;
 mod structs;
 mod ui;
+mod utils;
 
 use std::sync::{Arc, Mutex};
 
