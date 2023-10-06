@@ -119,114 +119,7 @@ fn render_windows(ctx: &Context, app_state: Arc<Mutex<AppState>>, ui_to_network:
     {
         let mut state = app_state.lock().unwrap();
         for window_index in 0..state.connections.len() {
-            let window_id = state.connections[window_index].id.clone();
-            let utn_for_send = ui_to_network_clone.clone();
-            let utn_for_disconnect = ui_to_network_clone.clone();
-
-            egui::Window::new(&window_id.to_string())
-                .resizable(true)
-                .show(ctx, |ui| {
-                    ui.horizontal(|ui| {
-                        ui.label("Ip Address:");
-                        ui.label(&state.connections[window_index].connection.url);
-                        if ui.button("Disconnect").clicked() {
-                            actions.push(WindowAction::Disconnect(window_id));
-                            actions.push(WindowAction::Send(
-                                utn_for_disconnect,
-                                Message::Close {
-                                    id: window_id.clone(),
-                                },
-                            ));
-                        }
-                    });
-
-                    ui.separator();
-
-                    ui.horizontal(|ui| {
-                        ui.label(format!(
-                            "Sent / Recv [{} / {}] bytes",
-                            state.connections[window_index].connection.send_bytes,
-                            state.connections[window_index].connection.received_bytes
-                        ));
-                    });
-
-                    ui.separator();
-
-                    ui.horizontal(|ui| {
-                        ui.label("Messages:");
-                        egui::ScrollArea::vertical()
-                            .min_scrolled_height(400.)
-                            .stick_to_bottom(true)
-                            .show(ui, |ui| {
-                                ui.vertical(|ui| {
-                                    for message in
-                                        &state.connections[window_index].connection.messages
-                                    {
-                                        ui.horizontal(|ui| {
-                                            if ui
-                                                .button("📋")
-                                                .on_hover_text("Click to copy")
-                                                .clicked()
-                                            {
-                                                ui.output_mut(|o| {
-                                                    o.copied_text = message.to_string()
-                                                });
-                                            }
-                                            ui.add(egui::Label::new(message).wrap(true));
-                                        });
-                                    }
-                                });
-                            });
-                    });
-
-                    ui.separator();
-
-                    ui.label("Send Options:");
-                    ui.horizontal(|ui| {
-                        ui.radio_value(
-                            &mut state.connections[window_index].send_option,
-                            SendOptions::Manual,
-                            "Manual",
-                        );
-                        ui.radio_value(
-                            &mut state.connections[window_index].send_option,
-                            SendOptions::Periodically,
-                            "Periodically",
-                        );
-                        ui.radio_value(
-                            &mut state.connections[window_index].send_option,
-                            SendOptions::Random,
-                            "Random",
-                        );
-                        ui.radio_value(
-                            &mut state.connections[window_index].send_option,
-                            SendOptions::File,
-                            "File",
-                        );
-                        ui.radio_value(
-                            &mut state.connections[window_index].send_option,
-                            SendOptions::N,
-                            "N",
-                        );
-                    });
-
-                    match state.connections[window_index].send_option {
-                        SendOptions::Periodically => {}
-                        SendOptions::Random => {}
-                        SendOptions::Manual => {
-                            chat_input(
-                                ui,
-                                &mut state,
-                                window_index,
-                                &mut actions,
-                                window_id,
-                                utn_for_send,
-                            );
-                        }
-                        SendOptions::File => {}
-                        SendOptions::N => {}
-                    }
-                });
+            render_connection_window(&mut state, window_index, &ui_to_network_clone, ctx, &mut actions);
         }
     }
 
@@ -259,7 +152,118 @@ fn render_windows(ctx: &Context, app_state: Arc<Mutex<AppState>>, ui_to_network:
     state.windows_to_remove.clear();
 }
 
-fn chat_input(
+fn render_connection_window(state: &mut std::sync::MutexGuard<'_, AppState>, window_index: usize, ui_to_network_clone: &Sender<Message>, ctx: &Context, actions: &mut Vec<WindowAction>) {
+    let window_id = state.connections[window_index].id.clone();
+    let utn_for_send = ui_to_network_clone.clone();
+    let utn_for_disconnect = ui_to_network_clone.clone();
+
+    egui::Window::new(&window_id.to_string())
+        .resizable(true)
+        .show(ctx, |ui| {
+            ui.horizontal(|ui| {
+                ui.label("Ip Address:");
+                ui.label(&state.connections[window_index].connection.url);
+                if ui.button("Disconnect").clicked() {
+                    actions.push(WindowAction::Disconnect(window_id));
+                    actions.push(WindowAction::Send(
+                        utn_for_disconnect,
+                        Message::Close {
+                            id: window_id.clone(),
+                        },
+                    ));
+                }
+            });
+
+            ui.separator();
+
+            ui.horizontal(|ui| {
+                ui.label(format!(
+                    "Sent / Recv [{} / {}] bytes",
+                    state.connections[window_index].connection.send_bytes,
+                    state.connections[window_index].connection.received_bytes
+                ));
+            });
+
+            ui.separator();
+
+            ui.horizontal(|ui| {
+                ui.label("Messages:");
+                egui::ScrollArea::vertical()
+                    .min_scrolled_height(400.)
+                    .stick_to_bottom(true)
+                    .show(ui, |ui| {
+                        ui.vertical(|ui| {
+                            for message in
+                                &state.connections[window_index].connection.messages
+                            {
+                                ui.horizontal(|ui| {
+                                    if ui
+                                        .button("📋")
+                                        .on_hover_text("Click to copy")
+                                        .clicked()
+                                    {
+                                        ui.output_mut(|o| {
+                                            o.copied_text = message.to_string()
+                                        });
+                                    }
+                                    ui.add(egui::Label::new(message).wrap(true));
+                                });
+                            }
+                        });
+                    });
+            });
+
+            ui.separator();
+
+            ui.label("Send Options:");
+            ui.horizontal(|ui| {
+                ui.radio_value(
+                    &mut state.connections[window_index].send_option,
+                    SendOptions::Manual,
+                    "Manual",
+                );
+                ui.radio_value(
+                    &mut state.connections[window_index].send_option,
+                    SendOptions::Periodically,
+                    "Periodically",
+                );
+                ui.radio_value(
+                    &mut state.connections[window_index].send_option,
+                    SendOptions::Random,
+                    "Random",
+                );
+                ui.radio_value(
+                    &mut state.connections[window_index].send_option,
+                    SendOptions::File,
+                    "File",
+                );
+                ui.radio_value(
+                    &mut state.connections[window_index].send_option,
+                    SendOptions::N,
+                    "N",
+                );
+            });
+
+            match state.connections[window_index].send_option {
+                SendOptions::Periodically => {}
+                SendOptions::Random => {}
+                SendOptions::Manual => {
+                    render_chat_input(
+                        ui,
+                        state,
+                        window_index,
+                        actions,
+                        window_id,
+                        utn_for_send,
+                    );
+                }
+                SendOptions::File => {}
+                SendOptions::N => {}
+            }
+        });
+}
+
+fn render_chat_input(
     ui: &mut egui::Ui,
     state: &mut std::sync::MutexGuard<'_, AppState>,
     window_index: usize,
