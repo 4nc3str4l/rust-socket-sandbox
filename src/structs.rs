@@ -8,6 +8,8 @@ pub struct Connection {
     pub editing_message: String,
     pub send_bytes: usize,
     pub received_bytes: usize,
+    pub send_interval: u32,
+    pub job_running: bool,
 }
 
 impl Connection {
@@ -19,6 +21,8 @@ impl Connection {
             editing_message: String::new(),
             send_bytes: 0,
             received_bytes: 0,
+            send_interval: 1000,
+            job_running: false,
         }
     }
 }
@@ -28,6 +32,7 @@ pub struct ConnectionWindow {
     pub is_open: bool,
     pub connection: Connection,
     pub send_option: SendOptions,
+    pub editing_period: String,
 }
 
 impl Default for ConnectionWindow {
@@ -37,6 +42,7 @@ impl Default for ConnectionWindow {
             is_open: true,
             connection: Connection::default(),
             send_option: SendOptions::Manual,
+            editing_period: String::from("1000"),
         }
     }
 }
@@ -48,6 +54,7 @@ impl ConnectionWindow {
             is_open: true,
             connection: Connection::new(url),
             send_option: SendOptions::Manual,
+            editing_period: String::from("1000"),
         }
     }
 }
@@ -83,7 +90,6 @@ pub enum SendOptions {
     Random,
     Manual,
     File,
-    N,
 }
 
 pub enum WindowAction {

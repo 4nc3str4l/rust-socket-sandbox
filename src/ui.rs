@@ -119,7 +119,13 @@ fn render_windows(ctx: &Context, app_state: Arc<Mutex<AppState>>, ui_to_network:
     {
         let mut state = app_state.lock().unwrap();
         for window_index in 0..state.connections.len() {
-            render_connection_window(&mut state, window_index, &ui_to_network_clone, ctx, &mut actions);
+            render_connection_window(
+                &mut state,
+                window_index,
+                &ui_to_network_clone,
+                ctx,
+                &mut actions,
+            );
         }
     }
 
@@ -152,7 +158,13 @@ fn render_windows(ctx: &Context, app_state: Arc<Mutex<AppState>>, ui_to_network:
     state.windows_to_remove.clear();
 }
 
-fn render_connection_window(state: &mut std::sync::MutexGuard<'_, AppState>, window_index: usize, ui_to_network_clone: &Sender<Message>, ctx: &Context, actions: &mut Vec<WindowAction>) {
+fn render_connection_window(
+    state: &mut std::sync::MutexGuard<'_, AppState>,
+    window_index: usize,
+    ui_to_network_clone: &Sender<Message>,
+    ctx: &Context,
+    actions: &mut Vec<WindowAction>,
+) {
     let window_id = state.connections[window_index].id.clone();
     let utn_for_send = ui_to_network_clone.clone();
     let utn_for_disconnect = ui_to_network_clone.clone();
@@ -193,18 +205,10 @@ fn render_connection_window(state: &mut std::sync::MutexGuard<'_, AppState>, win
                     .stick_to_bottom(true)
                     .show(ui, |ui| {
                         ui.vertical(|ui| {
-                            for message in
-                                &state.connections[window_index].connection.messages
-                            {
+                            for message in &state.connections[window_index].connection.messages {
                                 ui.horizontal(|ui| {
-                                    if ui
-                                        .button("📋")
-                                        .on_hover_text("Click to copy")
-                                        .clicked()
-                                    {
-                                        ui.output_mut(|o| {
-                                            o.copied_text = message.to_string()
-                                        });
+                                    if ui.button("📋").on_hover_text("Click to copy").clicked() {
+                                        ui.output_mut(|o| o.copied_text = message.to_string());
                                     }
                                     ui.add(egui::Label::new(message).wrap(true));
                                 });
@@ -237,28 +241,86 @@ fn render_connection_window(state: &mut std::sync::MutexGuard<'_, AppState>, win
                     SendOptions::File,
                     "File",
                 );
-                ui.radio_value(
-                    &mut state.connections[window_index].send_option,
-                    SendOptions::N,
-                    "N",
-                );
             });
 
             match state.connections[window_index].send_option {
-                SendOptions::Periodically => {}
-                SendOptions::Random => {}
+                SendOptions::Periodically => {
+                    ui.vertical(|ui| {
+                        ui.label("Period (ms):");
+                        ui.add(egui::TextEdit::singleline(
+                            &mut state.connections[window_index].editing_period,
+                        ));
+
+                        ui.label("Quantity (-1 = infinite)");
+                        ui.add(egui::TextEdit::singleline(
+                            &mut state.connections[window_index].editing_period,
+                        ));
+
+                        if state.connections[window_index].connection.job_running {
+                            if ui.button("Cancel").clicked() {
+                                state.connections[window_index].connection.job_running = false;
+                                // TODO: Make sure to interrupt the interval task
+                            }
+                        } else {
+                            if ui.button("Start").clicked() {
+                                state.connections[window_index].connection.job_running = true;
+                                // TODO: Start the task that sends messages periodically
+                            }
+                        }
+                    });
+                    render_chat_input(ui, state, window_index, actions, window_id, utn_for_send);
+                }
+                SendOptions::Random => {
+                    ui.vertical(|ui| {
+                        ui.label("Period (ms):");
+                        ui.add(egui::TextEdit::singleline(
+                            &mut state.connections[window_index].editing_period,
+                        ));
+
+                        ui.label("Min Length:");
+                        ui.add(egui::TextEdit::singleline(
+                            &mut state.connections[window_index].editing_period,
+                        ));
+
+                        ui.label("Max Length:");
+                        ui.add(egui::TextEdit::singleline(
+                            &mut state.connections[window_index].editing_period,
+                        ));
+                        ui.horizontal(|ui| {
+                            ui.label("Contains Letters:");
+                            ui.checkbox(
+                                &mut state.connections[window_index].connection.job_running,
+                                "",
+                            );
+    
+                            ui.label("Contains Numbers:");
+                            ui.checkbox(
+                                &mut state.connections[window_index].connection.job_running,
+                                "",
+                            );
+    
+                            ui.label("Contains Symbols:");
+                            ui.checkbox(
+                                &mut state.connections[window_index].connection.job_running,
+                                "",
+                            );
+                        });
+
+                        if state.connections[window_index].connection.job_running {
+                            if ui.button("Cancel").clicked() {
+                                state.connections[window_index].connection.job_running = false;
+                            }
+                        }else {
+                            if ui.button("Start").clicked() {
+                                state.connections[window_index].connection.job_running = true;
+                            }
+                        }
+                    });
+                }
                 SendOptions::Manual => {
-                    render_chat_input(
-                        ui,
-                        state,
-                        window_index,
-                        actions,
-                        window_id,
-                        utn_for_send,
-                    );
+                    render_chat_input(ui, state, window_index, actions, window_id, utn_for_send);
                 }
                 SendOptions::File => {}
-                SendOptions::N => {}
             }
         });
 }
