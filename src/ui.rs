@@ -292,13 +292,13 @@ fn render_connection_window(
                                 &mut state.connections[window_index].connection.job_running,
                                 "",
                             );
-    
+
                             ui.label("Contains Numbers:");
                             ui.checkbox(
                                 &mut state.connections[window_index].connection.job_running,
                                 "",
                             );
-    
+
                             ui.label("Contains Symbols:");
                             ui.checkbox(
                                 &mut state.connections[window_index].connection.job_running,
@@ -310,7 +310,7 @@ fn render_connection_window(
                             if ui.button("Cancel").clicked() {
                                 state.connections[window_index].connection.job_running = false;
                             }
-                        }else {
+                        } else {
                             if ui.button("Start").clicked() {
                                 state.connections[window_index].connection.job_running = true;
                             }

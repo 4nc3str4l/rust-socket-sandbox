@@ -1,7 +1,7 @@
+use anyhow::Result;
 use serde_json::{from_reader, to_string_pretty, Error};
 use std::fs::File;
 use std::io::Write;
-use anyhow::Result;
 
 use crate::structs::AppState;
 
@@ -20,17 +20,16 @@ pub fn get_stored_app() -> AppState {
                     default_state
                 }
             }
-        },
+        }
         Err(_) => {
             let default_state = AppState::default();
             if let Err(e) = store_app(&default_state) {
                 eprintln!("Could not store app state: {:?}", e);
             }
             default_state
-        },
+        }
     }
 }
-
 
 pub fn store_app(app_state: &AppState) -> Result<()> {
     let app_state_json = to_string_pretty(app_state)?;
